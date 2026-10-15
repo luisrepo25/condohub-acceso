@@ -1,0 +1,19 @@
+{
+  "extends": "next/core-web-vitals",
+  "overrides": [
+    {
+      "files": ["src/domain/**/*.ts", "src/application/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              { "group": ["next", "next/*", "@aws-sdk/*", "zod", "jose", "@/infrastructure/*", "@/app/*"],
+                "message": "domain y application no importan frameworks ni infraestructura (arquitectura Clean)" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
