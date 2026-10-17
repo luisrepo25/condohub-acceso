@@ -80,6 +80,7 @@ Los endpoints existen y ya están protegidos por rol; su lógica no: responden `
 - Los route handlers se escriben con `proteger([...roles], manejador)` (`src/infrastructure/http/proteger.ts`); JWT con `jose` en `src/infrastructure/keycloak/jose-verificador.ts`; errores problem+json en `problemas.ts`.
 - ESLint prohíbe a `domain` y `application` importar `next`, `@aws-sdk`, `zod`, `jose` o infraestructura. `npm test` (35 tests, incluido el de contrato con `acceso.yaml`), `npm run lint`, `npm run typecheck`, `npm run build`.
 - Variables: `KEYCLOAK_ISSUER`, `KEYCLOAK_JWKS`. Por el gateway: `http://localhost:8080/acceso/api/salud` con Bearer.
+- Contenedor y CI (16/10/2026): `Dockerfile` en la raíz del repo; `infra/docker-compose.apps.yml` lo levanta junto al resto; `.github/workflows/ci.yml` corre las pruebas y publica la imagen en GHCR desde `main`.
 
 ## Código funcional protegido (obligatorio)
 
