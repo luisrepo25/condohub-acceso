@@ -4,3 +4,14 @@ next-env.d.ts
 *.tsbuildinfo
 .env
 .env.local
+
+.env.*
+!.env.example
+coverage/
+.vite/
+.eslintcache
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
