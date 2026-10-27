@@ -42,6 +42,12 @@ export interface VisitaRepository {
 
 export interface PaseRepository {
   porCodigo(codigo: string): Promise<Pase | null>;
+  /**
+   * O6: pases de un día local (vigentes, usados o revocados), para la copia sin conexión del guardia.
+   *
+   * @param desde solo los creados o cambiados desde ese instante (sincronización incremental)
+   */
+  delDia(fecha: string, desde?: Date): Promise<Pase[]>;
 }
 
 export interface RegistroAccesoRepository {

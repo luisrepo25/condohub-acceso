@@ -1,4 +1,4 @@
-import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { type DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { type EstadoGuardado, Pase } from '@/domain/model/pase';
 import type { RegistroAcceso } from '@/domain/model/registro-acceso';
 import type { Visita } from '@/domain/model/visita';
@@ -18,7 +18,9 @@ export class RespuestasDynamo extends RepositorioDynamo implements RespuestasIde
   async buscar(clave: string): Promise<RespuestaGuardada | null> {
     const item = await this.leer(`IDEM#${clave}`);
     if (!item) return null;
-    return { clave, sub: String(item.sub ?? ''), codigoHttp: Number(item.codigoHttp), cuerpo: item.respuesta };
+    // Texto JSON (O3: idéntico a la primera vez); los datos demo antiguos lo guardaron como mapa.
+    const cuerpo = typeof item.respuesta === 'string' ? JSON.parse(item.respuesta) : item.respuesta;
+    return { clave, sub: String(item.sub ?? ''), codigoHttp: Number(item.codigoHttp), cuerpo };
   }
 }
 
@@ -39,8 +41,8 @@ export class VisitasDynamo extends RepositorioDynamo implements VisitaRepository
         codigo: p.codigo, visitaId: p.visitaId, unidadCodigo: p.unidadCodigo, estado: p.estado, usos: p.usos,
         usosMaximos: p.usosMaximos, validoDesde: p.validoDesde.toISOString(), validoHasta: p.validoHasta.toISOString(),
         origen: p.origen,
-        // Pases del día para la PWA del guardia (GET /api/pases/guardia)
-        GSI1PK: `PASES#${v.fecha}`, GSI1SK: `PASE#${p.codigo}`,
+        // Pases del día para la PWA del guardia (GET /api/pases/guardia); actualizadoEn para pedir solo lo que cambió
+        GSI1PK: `PASES#${v.fecha}`, GSI1SK: `PASE#${p.codigo}`, actualizadoEn: v.creadaEn.toISOString(),
       }),
     ]);
   }
@@ -49,7 +51,32 @@ export class VisitasDynamo extends RepositorioDynamo implements VisitaRepository
 export class PasesDynamo extends RepositorioDynamo implements PaseRepository {
   async porCodigo(codigo: string): Promise<Pase | null> {
     const item = await this.leer(`PASE#${codigo}`);
-    if (!item) return null;
+    return item ? PasesDynamo.aPase(item) : null;
+  }
+
+  async delDia(fecha: string, desde?: Date): Promise<Pase[]> {
+    const pases: Pase[] = [];
+    let desdeClave: Record<string, unknown> | undefined;
+    do {
+      const r = await this.doc.send(
+        new QueryCommand({
+          TableName: this.tabla,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :dia',
+          // Los pases sin marca de cambio (datos demo antiguos) se incluyen siempre.
+          ...(desde
+            ? { FilterExpression: 'attribute_not_exists(actualizadoEn) OR actualizadoEn >= :desde', ExpressionAttributeValues: { ':dia': `PASES#${fecha}`, ':desde': desde.toISOString() } }
+            : { ExpressionAttributeValues: { ':dia': `PASES#${fecha}` } }),
+          ExclusiveStartKey: desdeClave,
+        }),
+      );
+      pases.push(...(r.Items ?? []).map(PasesDynamo.aPase));
+      desdeClave = r.LastEvaluatedKey;
+    } while (desdeClave);
+    return pases;
+  }
+
+  private static aPase(item: Record<string, unknown>): Pase {
     return Pase.reconstituir({
       codigo: String(item.codigo),
       visitaId: item.visitaId === undefined ? undefined : String(item.visitaId),
@@ -100,7 +127,7 @@ export class RegistrosDynamo extends RepositorioDynamo implements RegistroAcceso
         PK: `DIA#${dia}`, SK: sk, tipo: 'RegistroAcceso',
         registroId: r.registroId, sentido: r.sentido, categoria: r.categoria, unidadCodigo: r.unidadCodigo,
         paseCodigo: r.paseCodigo, placa: r.placa, confianzaPlaca: r.confianzaPlaca, resultado: r.resultado,
-        motivo: r.motivo, corrigeA: r.corrigeA, guardiaSub: r.guardiaSub,
+        motivo: r.motivo, corrigeA: r.corrigeA, guardiaSub: r.guardiaSub, observacion: r.observacion,
         horaDispositivo: r.horaDispositivo.toISOString(), horaServidor: hora, idempotencyKey: respuesta.clave,
         ...(r.unidadCodigo ? { GSI2PK: `UNIDAD#${r.unidadCodigo}`, GSI2SK: `ACCESO#${hora}` } : {}),
       }),
@@ -116,13 +143,14 @@ export class RegistrosDynamo extends RepositorioDynamo implements RegistroAcceso
       Update: {
         TableName: this.tabla,
         Key: { PK: `PASE#${antes.codigo}`, SK: 'META' },
-        UpdateExpression: 'SET usos = :usosNuevos, estado = :estadoNuevo',
+        UpdateExpression: 'SET usos = :usosNuevos, estado = :estadoNuevo, actualizadoEn = :ahora',
         ConditionExpression: 'usos = :usosAntes AND estado = :estadoAntes',
         ExpressionAttributeValues: {
           ':usosNuevos': despues.datos.usos,
           ':estadoNuevo': despues.datos.estado,
           ':usosAntes': antes.datos.usos,
           ':estadoAntes': antes.datos.estado,
+          ':ahora': new Date().toISOString(),
         },
       },
     };

@@ -1,14 +1,16 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import type { DepsAlertas, DepsPasesGuardia } from '@/application/casos/consultas-guardia';
 import type { DepsRegistrarAcceso } from '@/application/casos/registrar-acceso';
 import type { DepsRegistrarVisita } from '@/application/casos/registrar-visita';
 import type { DepsValidarPase } from '@/application/casos/validar-pase';
 import { configDesdeEntorno } from './config';
 import { PasesDynamo, RegistrosDynamo, RespuestasDynamo, VehiculosDynamo, VisitasDynamo } from './dynamodb/repositorios';
 import { UnidadesGraphql } from './gestion/unidades-graphql';
+import { VisitantesIa } from './ia/visitantes-ia';
 
-export type Dependencias = DepsRegistrarVisita & DepsValidarPase & DepsRegistrarAcceso;
+export type Dependencias = DepsRegistrarVisita & DepsValidarPase & DepsRegistrarAcceso & DepsPasesGuardia & DepsAlertas;
 
 let actuales: Dependencias | undefined;
 
@@ -40,6 +42,7 @@ function crear(): Dependencias {
     vehiculos: new VehiculosDynamo(doc, c.dynamoTabla),
     respuestas: new RespuestasDynamo(doc, c.dynamoTabla),
     unidades: new UnidadesGraphql(c.gestionGraphqlUrl, c.gestionTimeoutMs),
+    visitantes: new VisitantesIa(c.iaUrl, c.iaTimeoutMs),
     reloj: { ahora: () => new Date() },
     // El código del pase es la credencial del QR: 128 bits aleatorios, imposible de adivinar.
     ids: { id: () => randomUUID(), codigoPase: () => `QR-${randomBytes(16).toString('base64url')}` },

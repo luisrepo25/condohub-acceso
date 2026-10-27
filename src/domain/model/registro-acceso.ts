@@ -25,6 +25,8 @@ export interface DatosRegistro extends Omit<NuevoAcceso, 'resultado'> {
   readonly resultado: Resultado;
   readonly guardiaSub: string;
   readonly horaServidor: Date;
+  /** O6: por qué un ingreso sincronizado se registró sin gastar su pase (el ADMIN lo revisa). */
+  readonly observacion?: string;
 }
 
 /**
@@ -38,7 +40,10 @@ export class RegistroAcceso {
    * A2: un rechazo lleva motivo; un ingreso permitido necesita quién lo autoriza (un pase o la unidad que lo autoriza,
    * que con placa reconocida sale del vehículo, A4). La unidad, si viene, ya está resuelta por el caso de uso.
    */
-  static registrar(nuevo: NuevoAcceso, extra: { registroId: string; guardiaSub: string; horaServidor: Date }): RegistroAcceso {
+  static registrar(
+    nuevo: NuevoAcceso,
+    extra: { registroId: string; guardiaSub: string; horaServidor: Date; observacion?: string },
+  ): RegistroAcceso {
     const resultado = nuevo.resultado ?? 'PERMITIDO';
     const motivo = nuevo.motivo?.trim() || undefined;
     if (motivo && motivo.length > 300) throw new DatoInvalido('El motivo admite hasta 300 caracteres');

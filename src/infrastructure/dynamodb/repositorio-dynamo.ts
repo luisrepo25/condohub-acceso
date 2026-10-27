@@ -25,7 +25,8 @@ export abstract class RepositorioDynamo {
   protected idempotencia(r: RespuestaGuardada): Escritura {
     return this.nuevo({
       PK: `IDEM#${r.clave}`, SK: 'META', tipo: 'Idempotencia',
-      sub: r.sub, codigoHttp: r.codigoHttp, respuesta: r.cuerpo,
+      // O3: el cuerpo se guarda como texto JSON, así se devuelve idéntico (un mapa de DynamoDB no conserva el orden).
+      sub: r.sub, codigoHttp: r.codigoHttp, respuesta: JSON.stringify(r.cuerpo),
       expiraEn: Math.floor(Date.now() / 1000) + DIAS_IDEMPOTENCIA * 86400,
     });
   }

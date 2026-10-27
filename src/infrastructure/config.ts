@@ -10,6 +10,9 @@ export function configDesdeEntorno() {
     // Gestión (F1: unidades del residente), por el gateway. En Docker: http://gateway:8000/gestion/graphql
     gestionGraphqlUrl: process.env.GESTION_GRAPHQL_URL ?? 'http://localhost:8080/gestion/graphql',
     gestionTimeoutMs: Number(process.env.GESTION_TIMEOUT_MS ?? 5000),
+    // Servicio IA (I4: visitantes recurrentes), por el gateway. En Docker: http://gateway:8000/ia
+    iaUrl: process.env.IA_URL ?? 'http://localhost:8080/ia',
+    iaTimeoutMs: Number(process.env.IA_TIMEOUT_MS ?? 5000),
     // Parámetros de negocio (A1, A4)
     zonaHoraria: process.env.CONDOMINIO_ZONA_HORARIA ?? 'America/La_Paz',
     ventanaDesde: process.env.PASE_VENTANA_DESDE ?? '07:00:00',

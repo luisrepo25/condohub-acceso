@@ -1,3 +1,4 @@
+import type { OperacionSync } from '@/application/casos/sincronizar-lote';
 import { DatoInvalido } from '@/domain/errores';
 import type { NuevoAcceso } from '@/domain/model/registro-acceso';
 import type { SolicitudVisita } from '@/domain/model/visita';
@@ -62,6 +63,43 @@ export function codigoDePase(o: Objeto): string {
   const codigo = texto(o, 'codigo', 100, true).trim();
   if (codigo === '') throw new DatoInvalido('Falta el campo codigo');
   return codigo;
+}
+
+/** Parámetro de consulta `desde` (fecha ISO-8601 con zona), opcional. */
+export function desdeDe(request: Request): Date | undefined {
+  const valor = new URL(request.url).searchParams.get('desde');
+  if (valor === null || valor === '') return undefined;
+  if (!FECHA_HORA_CON_ZONA.test(valor) || Number.isNaN(Date.parse(valor))) {
+    throw new DatoInvalido('desde debe ser una fecha ISO-8601 con zona, ej. 2026-10-27T00:00:00Z');
+  }
+  return new Date(valor);
+}
+
+/** Máximo de operaciones por lote de `POST /api/sync`: la PWA envía su cola en partes. */
+export const MAXIMO_OPERACIONES = 100;
+
+/**
+ * Forma del lote (contrato LoteSync). El lote mal formado es 400 entero; los `datos` de cada operación se leen al
+ * procesarla, así una operación mal formada responde 400 sola y no frena a las demás.
+ */
+export function loteSync(o: Objeto): OperacionSync[] {
+  const operaciones = o.operaciones;
+  if (!Array.isArray(operaciones) || operaciones.length === 0) throw new DatoInvalido('operaciones debe ser una lista con al menos una operación');
+  if (operaciones.length > MAXIMO_OPERACIONES) throw new DatoInvalido(`Un lote admite hasta ${MAXIMO_OPERACIONES} operaciones`);
+  return operaciones.map((op, i) => {
+    if (typeof op !== 'object' || op === null || Array.isArray(op)) throw new DatoInvalido(`La operación ${i} debe ser un objeto`);
+    const operacion = op as Objeto;
+    const clave = texto(operacion, 'idempotencyKey', 60, true);
+    if (operacion.tipo !== 'ACCESO') throw new DatoInvalido(`La operación ${i}: tipo debe ser ACCESO`);
+    const datos = operacion.datos;
+    return {
+      idempotencyKey: clave,
+      datos: () => {
+        if (typeof datos !== 'object' || datos === null || Array.isArray(datos)) throw new DatoInvalido('datos debe ser un objeto');
+        return nuevoAcceso(datos as Objeto);
+      },
+    };
+  });
 }
 
 export function nuevoAcceso(o: Objeto): NuevoAcceso {

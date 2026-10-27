@@ -1,3 +1,4 @@
+import type { Alerta } from '@/domain/model/alerta';
 import type { Pase } from '@/domain/model/pase';
 import type { RegistroAcceso } from '@/domain/model/registro-acceso';
 import type { Visita } from '@/domain/model/visita';
@@ -53,5 +54,17 @@ export function registroJson(registro: RegistroAcceso) {
     horaDispositivo: d.horaDispositivo.toISOString(),
     horaServidor: d.horaServidor.toISOString(),
     guardiaSub: d.guardiaSub,
+    ...(d.observacion ? { observacion: d.observacion } : {}),
+  };
+}
+
+export function alertaJson(alerta: Alerta) {
+  return {
+    id: alerta.id,
+    tipo: alerta.tipo,
+    clusterId: alerta.clusterId,
+    apariciones: alerta.apariciones,
+    diasDistintos: alerta.diasDistintos,
+    creadaEn: alerta.creadaEn.toISOString(),
   };
 }

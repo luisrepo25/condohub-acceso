@@ -1,6 +1,7 @@
 import {
   ClaveIdempotenciaAjena,
   GestionNoDisponible,
+  IaNoDisponible,
   ServicioDeIdentidadNoDisponible,
   SinPermiso,
   TokenInvalido,
@@ -38,6 +39,12 @@ export function desdeError(e: unknown): Response {
   }
   if (e instanceof DatoInvalido) return problema(400, 'Solicitud inválida', { detail: e.message });
   if (e instanceof ClaveIdempotenciaAjena) return problema(409, 'Idempotency-Key ya usada', { detail: e.message, code: 'O3' });
+  if (e instanceof IaNoDisponible) {
+    return problema(503, 'Servicio IA no disponible', {
+      detail: 'No se pudieron consultar las alertas de visitantes recurrentes; reintenta en unos segundos',
+      headers: { 'retry-after': '5' },
+    });
+  }
   if (e instanceof GestionNoDisponible) {
     return problema(503, 'Gestión no disponible', {
       detail: 'No se pudo consultar a Gestión qué unidades son tuyas; reintenta en unos segundos',
