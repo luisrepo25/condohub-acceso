@@ -1,4 +1,4 @@
-// Matriz rol × endpoint. Permitido ⇒ llega a la lógica (hoy 501); no permitido ⇒ 403; sin token ⇒ 401.
+// Matriz rol × endpoint. Permitido ⇒ llega a la lógica (ni 401 ni 403); no permitido ⇒ 403; sin token ⇒ 401.
 import { beforeAll, describe, expect, it } from 'vitest';
 import { POST as accesos } from '@/app/api/accesos/route';
 import { GET as alertas } from '@/app/api/alertas/route';
@@ -29,7 +29,11 @@ describe.each(casos)('$nombre', ({ metodo, manejador, permitidos }) => {
 
   it.each(['ADMIN', 'RESIDENTE', 'GUARDIA'])('rol %s', async (rol) => {
     const r = await manejador(peticion(metodo, await crearToken([rol])));
-    expect(r.status).toBe(permitidos.includes(rol) ? 501 : 403);
-    expect(r.headers.get('content-type')).toContain('application/problem+json');
+    if (permitidos.includes(rol)) {
+      expect([401, 403]).not.toContain(r.status);
+    } else {
+      expect(r.status).toBe(403);
+      expect(r.headers.get('content-type')).toContain('application/problem+json');
+    }
   });
 });
