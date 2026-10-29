@@ -11,17 +11,22 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "db:crear": "node db/crear-tabla.mjs",
-    "db:demo": "node db/datos-demo.mjs"
+    "db:demo": "node db/datos-demo.mjs",
+    "saga": "tsx src/infrastructure/messaging/proceso-saga.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/client-dynamodb-streams": "^3.1152.0",
     "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "amqplib": "^0.10.9",
     "jose": "^5.9.0",
     "next": "^14.2.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "tsx": "^4.23.15"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.0",
     "eslint": "^8.57.0",
