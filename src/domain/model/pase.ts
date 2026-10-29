@@ -18,6 +18,9 @@ export interface DatosPase {
   readonly validoDesde: Date;
   readonly validoHasta: Date;
   readonly origen: 'VISITA' | 'RESERVA';
+  /** Paso 3 de la saga: la reserva y el invitado de un pase de origen RESERVA. */
+  readonly reservaId?: string;
+  readonly invitadoId?: string;
 }
 
 /**
@@ -42,6 +45,31 @@ export class Pase {
     });
   }
 
+  /**
+   * Paso 3 de la saga: pase de un invitado de una reserva, con la misma ventana y el mismo único uso que el de una
+   * visita (A1) para el día de la reserva.
+   */
+  static emitirParaReserva(
+    codigo: string,
+    invitado: { reservaId: string; invitadoId: string },
+    unidadCodigo: string,
+    fecha: string,
+    p: ParametrosAcceso,
+  ): Pase {
+    return new Pase({
+      codigo,
+      unidadCodigo,
+      estado: 'VIGENTE',
+      usos: 0,
+      usosMaximos: 1,
+      validoDesde: instanteLocal(fecha, p.ventanaDesde, p.zonaHoraria),
+      validoHasta: instanteLocal(fecha, p.ventanaHasta, p.zonaHoraria),
+      origen: 'RESERVA',
+      reservaId: invitado.reservaId,
+      invitadoId: invitado.invitadoId,
+    });
+  }
+
   static reconstituir(datos: DatosPase): Pase {
     return new Pase(datos);
   }
@@ -63,6 +91,11 @@ export class Pase {
     if (ahora > this.datos.validoHasta) return { valido: false, motivo: 'VENCIDO' };
     if (ahora < this.datos.validoDesde) return { valido: false, motivo: 'AUN_NO_VALIDO' };
     return { valido: true };
+  }
+
+  /** Compensación del paso 3: un pase vigente queda REVOCADO (A2). Uno usado o ya revocado no cambia (A3). */
+  revocar(): Pase {
+    return this.datos.estado === 'VIGENTE' ? new Pase({ ...this.datos, estado: 'REVOCADO' }) : this;
   }
 
   /** A1, A2: consume un uso de ingreso. Lanza A2 con el motivo si el pase no sirve. */

@@ -1,4 +1,5 @@
 import type { Pase } from '../model/pase';
+import type { PasesDeReserva } from '../model/pases-de-reserva';
 import type { RegistroAcceso } from '../model/registro-acceso';
 import type { Visita } from '../model/visita';
 import type { VehiculoRegistrado } from '../services/politica-placas';
@@ -63,4 +64,31 @@ export interface RegistroAccesoRepository {
 
 export interface VehiculoRepository {
   porPlaca(placa: string): Promise<VehiculoRegistrado | null>;
+}
+
+/** Paso 3 de la saga: otra emisión o revocación de la misma reserva se guardó antes. */
+export class PasesDeReservaYaRegistrados extends Error {
+  constructor() {
+    super('Los pases de la reserva ya se registraron');
+    this.name = 'PasesDeReservaYaRegistrados';
+  }
+}
+
+export interface PasesDeReservaRepository {
+  deLaReserva(reservaId: string): Promise<PasesDeReserva | null>;
+  /** Guarda qué pase recibió cada invitado. @throws PasesDeReservaYaRegistrados si otro proceso lo guardó antes */
+  registrar(pases: PasesDeReserva): Promise<void>;
+  /**
+   * Guarda los pases que falten (los ya guardados no se tocan): repetirlo no duplica nada.
+   *
+   * @param fecha día local de los pases (índice de los pases del día para la app del guardia)
+   */
+  guardarPases(fecha: string, pases: Pase[]): Promise<void>;
+  /**
+   * Guarda la reserva como revocada y revoca sus pases todavía vigentes (los usados no cambian, A3). Repetirlo no
+   * cambia nada más: retoma una revocación que se cortó a mitad.
+   *
+   * @return cuántos pases se revocaron en esta llamada
+   */
+  revocar(revocada: PasesDeReserva): Promise<number>;
 }

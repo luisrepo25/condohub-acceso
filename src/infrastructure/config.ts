@@ -18,5 +18,10 @@ export function configDesdeEntorno() {
     ventanaDesde: process.env.PASE_VENTANA_DESDE ?? '07:00:00',
     ventanaHasta: process.env.PASE_VENTANA_HASTA ?? '23:59:59',
     confianzaPlacaMinima: Number(process.env.PLACA_CONFIANZA_MINIMA ?? 0.85),
+    // Saga de reserva, paso 3 (proceso `npm run saga`): RabbitMQ y cada cuánto el relevo publica las respuestas (S4)
+    rabbitmqUrl: process.env.RABBITMQ_URL ?? 'amqp://condohub:condohub@localhost:5672/%2F',
+    rabbitmqExchange: process.env.RABBITMQ_EXCHANGE ?? 'condohub.events',
+    rabbitmqColaSaga: process.env.RABBITMQ_COLA_SAGA ?? 'acceso.reservas',
+    relevoIntervaloMs: Number(process.env.RELEVO_INTERVALO_MS ?? 1000),
   };
 }

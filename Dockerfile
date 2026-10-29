@@ -13,6 +13,9 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/next.config.mjs ./
+# Proceso de la saga (`npm run saga`, contenedor acceso-saga): corre el TypeScript con tsx, que entiende los alias de tsconfig
+COPY --from=build /app/src ./src
+COPY --from=build /app/tsconfig.json ./
 USER node
 EXPOSE 3001
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=5 \
