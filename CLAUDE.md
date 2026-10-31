@@ -72,9 +72,9 @@ npm run db:demo        # datos de demostración (db/datos-demo.mjs)
 - Tests de dominio: `it('A3: un registro de acceso no se puede modificar')`. Test de idempotencia obligatorio para `/api/sync`: enviar el mismo lote dos veces y comprobar que hay un solo registro y la misma respuesta.
 - La hora del dispositivo se guarda (`horaDispositivo`) junto a la hora del servidor; nunca se reemplaza una por otra.
 
-## Estado y seguridad (esqueleto, 14/10/2026)
+## Estado y seguridad (actualizado 31/10/2026)
 
-Los endpoints existen y ya están protegidos por rol; su lógica no: responden `501` (`NO_IMPLEMENTADO`), a quitar al implementar cada uno.
+Implementados y protegidos por rol: `POST /api/visitas` (A1, F1 con `miPerfil` de Gestión), `POST /api/pases/validar` y `GET /api/pases/guardia` (A2, O6), `POST /api/accesos` y `POST /api/sync` (A3, O1–O4, idempotencia con DynamoDB), `GET /api/placas` (A4) y `GET /api/salud`, más el consumidor de la saga de reservas (paso 3: emitir y revocar pases). **Solo `GET /api/alertas` sigue en `501`**: el tablero del guardia lee las alertas de visitantes recurrentes del Servicio IA (`GET /ia/rostros/visitantes-recurrentes`) mientras tanto. 121 pruebas pasan y 18 de integración con DynamoDB se omiten si no hay DynamoDB Local.
 
 - Roles (propuesta derivada de A1–A3 y escrita en `contracts/openapi/acceso.yaml`, a confirmar con Erick): `GET /api/salud` cualquiera · `POST /api/visitas`: RESIDENTE, ADMIN · `POST /api/pases/validar`, `GET /api/pases/guardia`, `POST /api/accesos`, `POST /api/sync`, `GET /api/alertas`: GUARDIA, ADMIN.
 - Los route handlers se escriben con `proteger([...roles], manejador)` (`src/infrastructure/http/proteger.ts`); JWT con `jose` en `src/infrastructure/keycloak/jose-verificador.ts`; errores problem+json en `problemas.ts`.
