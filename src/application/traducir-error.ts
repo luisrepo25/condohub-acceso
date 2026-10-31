@@ -1,5 +1,5 @@
 import { ConflictoDeClave, DatoInvalido, ReglaViolada } from '@/domain/errores';
-import { ServicioNoDisponible } from './servicio-no-disponible';
+import { IaNoDisponible, ServicioNoDisponible } from './servicio-no-disponible';
 
 export interface ProblemaTraducido {
   readonly status: number;
@@ -17,6 +17,9 @@ export function traducirError(e: unknown): ProblemaTraducido | undefined {
   if (e instanceof ConflictoDeClave) return { status: 409, title: 'Conflicto', detail: e.message };
   if (e instanceof ReglaViolada && e.codigo === 'F1') return { status: 403, title: 'Sin permiso', detail: e.message, code: 'F1' };
   if (e instanceof ReglaViolada) return { status: 422, title: 'Regla de negocio violada', detail: e.message, code: e.codigo };
+  if (e instanceof IaNoDisponible) {
+    return { status: 503, title: 'Servicio no disponible', detail: 'No se pudo consultar al Servicio IA; reintente en unos segundos' };
+  }
   if (e instanceof ServicioNoDisponible) {
     return { status: 503, title: 'Servicio no disponible', detail: 'No se pudo consultar a Gestión; reintente en unos segundos' };
   }

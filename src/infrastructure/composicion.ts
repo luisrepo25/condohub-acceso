@@ -11,6 +11,9 @@ import { PlacasDynamo } from './dynamodb/placas-dynamo';
 import { RegistroAccesoDynamo } from './dynamodb/registro-acceso-dynamo';
 import { VisitaPaseDynamo } from './dynamodb/visita-pase-dynamo';
 import { UnidadesGestion } from './gestion/unidades-gestion';
+import { AlertasIa } from './ia/alertas-ia';
+import { iaUrlDesdeEntorno } from './config-ia';
+import { ListarAlertas } from '@/application/listar-alertas';
 
 export interface CasosDeUso {
   readonly registrarAcceso: RegistrarAcceso;
@@ -19,6 +22,7 @@ export interface CasosDeUso {
   readonly validarPase: ValidarPase;
   readonly pasesParaGuardia: PasesParaGuardia;
   readonly listarPlacas: ListarPlacas;
+  readonly listarAlertas: ListarAlertas;
 }
 
 let casos: CasosDeUso | undefined;
@@ -52,6 +56,7 @@ export function casosDeUso(): CasosDeUso {
       validarPase: new ValidarPase(visitasYPases, reloj),
       pasesParaGuardia: new PasesParaGuardia(visitasYPases, reloj, pases.desfaseMinutos),
       listarPlacas: new ListarPlacas(new PlacasDynamo(doc, dynamo.tabla)),
+      listarAlertas: new ListarAlertas(new AlertasIa(iaUrlDesdeEntorno())),
     };
   }
   return casos;

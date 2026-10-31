@@ -19,7 +19,7 @@ const casos: Array<{ nombre: string; metodo: string; manejador: Manejador; permi
   { nombre: 'O6_pases_vigentes_para_la_pwa', metodo: 'GET', manejador: pasesGuardia, permitidos: portero, implementado: true },
   { nombre: 'A3_registrar_acceso', metodo: 'POST', manejador: accesos, permitidos: portero, implementado: true },
   { nombre: 'O3_sincronizar_lote_offline', metodo: 'POST', manejador: sync, permitidos: portero, implementado: true },
-  { nombre: 'I4_alertas', metodo: 'GET', manejador: alertas, permitidos: portero },
+  { nombre: 'I4_alertas', metodo: 'GET', manejador: alertas, permitidos: portero, implementado: true },
 ];
 
 describe.each(casos)('$nombre', ({ metodo, manejador, permitidos, implementado }) => {
