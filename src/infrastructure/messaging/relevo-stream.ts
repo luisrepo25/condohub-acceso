@@ -16,6 +16,9 @@ export interface Publicador {
   publicar(routingKey: string, cuerpo: string, eventId: string): Promise<void>;
 }
 
+const esSecuenciaInvalida = (e: unknown): boolean =>
+  e instanceof Error && e.name === 'ValidationException' && /sequence ?number/i.test(e.message);
+
 /**
  * S4: relevo del stream de la tabla de Acceso (docs/datos/modelo-de-datos.md: DynamoDB Streams equivale al outbox).
  * Lee las altas de `ComandoAtendido` y publica su respuesta en RabbitMQ. Recuerda por fragmento del stream la última
@@ -132,8 +135,9 @@ export class RelevoStream {
     try {
       r = await pedir(true);
     } catch (e) {
-      // El registro del cursor ya salió del stream (más de 24 h): lo que queda es todo posterior.
-      if (!(e instanceof TrimmedDataAccessException)) throw e;
+      // El cursor ya no sirve: salió del stream (más de 24 h) o es de un stream anterior (tabla recreada o DynamoDB
+      // Local reiniciado). En ambos casos se lee el fragmento desde el inicio; Reservas descarta repetidos (S5).
+      if (!(e instanceof TrimmedDataAccessException) && !esSecuenciaInvalida(e)) throw e;
       r = await pedir(false);
     }
     if (!r.ShardIterator) throw new Error(`El stream no dio un iterador para el fragmento ${fragmento}`);
